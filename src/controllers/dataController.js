@@ -9,6 +9,12 @@ const inMemoryData = {
     calendarEvents: {}
 };
 
+// For testing purposes
+export const __get__ = (name) => {
+    if (name === 'inMemoryData') return inMemoryData;
+    return undefined; // Or throw an error for unsupported names
+};
+
 export const getProjects = async (req, res) => {
     if (isFirebaseEnabled) {
         const snapshot = await db.collection("projects")

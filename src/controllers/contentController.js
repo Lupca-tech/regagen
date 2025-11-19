@@ -7,6 +7,12 @@ const bucket = isFirebaseEnabled ? storage.bucket() : null;
 
 const inMemoryStore = {};
 
+// For testing purposes
+export const __get__ = (name) => {
+    if (name === 'inMemoryStore') return inMemoryStore;
+    return undefined; // Or throw an error for unsupported names
+};
+
 export const generateContent = async (req, res) => {
     const { topic, language, shouldGenerateImage, selectedPlatforms } = req.body;
     const context = req.body.context ?? {};
