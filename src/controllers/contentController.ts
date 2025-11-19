@@ -1,12 +1,14 @@
 import { Request, Response } from 'express';
 import { AuthenticatedRequest } from '../middleware/auth.js';
-import { db, storage } from '../config/firebase.js';
+import { db, storage, isFirebaseEnabled } from '../config/firebase.js';
 import { generateContentFlow, analyzePerformance } from '../services/geminiService.js';
 import { FieldValue } from 'firebase-admin/firestore';
 import { GeneratedContent } from '../types.js';
 import { Buffer } from 'buffer';
 
-const bucket = storage.bucket();
+const bucket = isFirebaseEnabled ? storage.bucket() : null;
+
+const inMemoryStore: { [key: string]: any } = {};
 
 export const generateContent = async (req: AuthenticatedRequest, res: Response) => {
     const { topic, language, shouldGenerateImage, selectedPlatforms, context } = req.body;
@@ -29,16 +31,15 @@ export const generateContent = async (req: AuthenticatedRequest, res: Response) 
         );
 
         // 2. Prepare for DB Save
-        const docRef = db.collection("generations").doc();
-        const contentId = docRef.id;
+        const contentId = isFirebaseEnabled ? db.collection("generations").doc().id : `gen_${Date.now()}_${Math.random().toString(36).substring(7)}`;
         
         const uploadedImages = [];
 
-        // 3. Upload Base64 Images to Firebase Storage
+        // 3. Upload Base64 Images to Firebase Storage (or keep as-is if Firebase disabled)
         if (content.images && content.images.length > 0) {
             for (let i = 0; i < content.images.length; i++) {
                 const imgData = content.images[i];
-                if (imgData.url.startsWith('data:image/')) {
+                if (isFirebaseEnabled && bucket && imgData.url.startsWith('data:image/')) {
                     const base64Data = imgData.url.split(';base64,').pop();
                     const fileName = `images/${userId}/${contentId}/${Date.now()}_${i}.png`;
                     const file = bucket.file(fileName);
@@ -53,13 +54,12 @@ export const generateContent = async (req: AuthenticatedRequest, res: Response) 
                         prompt: imgData.prompt
                     });
                 } else {
-                    // Keep external URLs (e.g. placeholders)
                     uploadedImages.push(imgData);
                 }
             }
         }
 
-        // 4. Save to Firestore
+        // 4. Save to Firestore or in-memory store
         const dataToSave = {
             mainArticle: content.mainArticle || {},
             images: uploadedImages,
@@ -77,17 +77,22 @@ export const generateContent = async (req: AuthenticatedRequest, res: Response) 
             projectId: context.projectId,
             campaignId: context.campaignId,
             topicId: context.topicId,
-            createdAt: FieldValue.serverTimestamp()
+            createdAt: isFirebaseEnabled ? FieldValue.serverTimestamp() : new Date().toISOString()
         };
 
-        await docRef.set(dataToSave);
-        
-        // Update Topic Status
-        if (context.topicId) {
-            await db.collection("topics").doc(context.topicId).update({ 
-                status: 'Generated', 
-                contentId: contentId 
-            });
+        if (isFirebaseEnabled) {
+            const docRef = db.collection("generations").doc(contentId);
+            await docRef.set(dataToSave);
+            
+            if (context.topicId) {
+                await db.collection("topics").doc(context.topicId).update({ 
+                    status: 'Generated', 
+                    contentId: contentId 
+                });
+            }
+        } else {
+            if (!inMemoryStore[userId]) inMemoryStore[userId] = [];
+            inMemoryStore[userId].unshift(dataToSave);
         }
 
         res.json({ contentId, content: { ...content, images: uploadedImages } });
@@ -101,13 +106,19 @@ export const generateContent = async (req: AuthenticatedRequest, res: Response) 
 export const getUserContent = async (req: AuthenticatedRequest, res: Response) => {
     try {
         const userId = req.user!.uid;
-        const snapshot = await db.collection("generations")
-            .where("userId", "==", userId)
-            .orderBy("createdAt", "desc")
-            .get();
         
-        const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        res.json(data);
+        if (isFirebaseEnabled) {
+            const snapshot = await db.collection("generations")
+                .where("userId", "==", userId)
+                .orderBy("createdAt", "desc")
+                .get();
+            
+            const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            res.json(data);
+        } else {
+            const data = inMemoryStore[userId] || [];
+            res.json(data);
+        }
     } catch (error) {
         res.status(500).json({ error: "Failed to fetch content" });
     }
@@ -116,18 +127,43 @@ export const getUserContent = async (req: AuthenticatedRequest, res: Response) =
 export const regenerateAnalysis = async (req: AuthenticatedRequest, res: Response) => {
     try {
         const { contentId, platforms } = req.body;
-        const docRef = db.collection("generations").doc(contentId);
-        const docSnap = await docRef.get();
+        
+        let content: GeneratedContent | null = null;
+        
+        if (isFirebaseEnabled) {
+            const docRef = db.collection("generations").doc(contentId);
+            const docSnap = await docRef.get();
 
-        if (!docSnap.exists) {
-             res.status(404).json({ error: "Content not found" });
-             return;
+            if (!docSnap.exists) {
+                res.status(404).json({ error: "Content not found" });
+                return;
+            }
+            content = docSnap.data() as GeneratedContent;
+        } else {
+            const userId = req.user!.uid;
+            const userContent = inMemoryStore[userId] || [];
+            content = userContent.find((c: any) => c.id === contentId);
+            
+            if (!content) {
+                res.status(404).json({ error: "Content not found" });
+                return;
+            }
         }
 
-        const content = docSnap.data() as GeneratedContent;
         const analysis = await analyzePerformance(content, platforms);
 
-        await docRef.update({ analysis });
+        if (isFirebaseEnabled) {
+            const docRef = db.collection("generations").doc(contentId);
+            await docRef.update({ analysis });
+        } else {
+            const userId = req.user!.uid;
+            const userContent = inMemoryStore[userId] || [];
+            const index = userContent.findIndex((c: any) => c.id === contentId);
+            if (index >= 0) {
+                userContent[index].analysis = analysis;
+            }
+        }
+        
         res.json(analysis);
     } catch (error) {
         res.status(500).json({ error: "Analysis failed" });
