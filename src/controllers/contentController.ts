@@ -11,7 +11,8 @@ const bucket = isFirebaseEnabled ? storage.bucket() : null;
 const inMemoryStore: { [key: string]: any } = {};
 
 export const generateContent = async (req: AuthenticatedRequest, res: Response) => {
-    const { topic, language, shouldGenerateImage, selectedPlatforms, context } = req.body;
+    const { topic, language, shouldGenerateImage, selectedPlatforms } = req.body;
+    const context = req.body.context ?? {};
     const userId = req.user!.uid;
 
     try {
