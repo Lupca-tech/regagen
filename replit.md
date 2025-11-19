@@ -1,29 +1,24 @@
 # Regagen API
 
 ## Overview
-Regagen API is a content generation platform powered by Google's Gemini AI. It helps create AI-powered content for multiple platforms including web articles, social media posts (Facebook, LinkedIn, X/Twitter), and video scripts (YouTube, TikTok).
+Regagen API is a content generation platform powered by Google's Gemini AI. It helps create AI-powered content for multiple platforms including web articles, social media posts, and video scripts. This is a pure backend API service.
 
-**Current State**: ✅ Fully functional and running in Replit
-- Backend API running on port 3001
-- Frontend proxy running on port 5000
+**Current State**: ✅ Fully functional JavaScript API
+- API running on port 3001
 - Gemini AI integration configured
 - Firebase optional (currently running in mock mode with in-memory storage)
 
-## Recent Changes (November 19, 2025)
-- ✅ Migrated from AI Studio's `@google/genai` to standard `@google/generative-ai` package
-- ✅ Updated all Gemini API calls to use correct SDK
-- ✅ Made Firebase optional with in-memory fallback storage
-- ✅ Created frontend proxy to serve backend on port 5000
-- ✅ Configured workflow to run both frontend and backend
-- ✅ Added .gitignore for Node.js project
-- ✅ Fixed helmet configuration to allow iframe/proxy access
-- ✅ Configured deployment settings for Replit
+## Recent Changes
+- ✅ Converted the entire project from TypeScript to pure JavaScript (ES Modules).
+- ✅ Removed the frontend proxy server and all related dependencies.
+- ✅ Simplified the project structure to be API-only.
+- ✅ Updated startup scripts and documentation for a JS workflow.
 
 ## Project Architecture
 
 ### Technology Stack
 - **Runtime**: Node.js 20
-- **Language**: TypeScript
+- **Language**: JavaScript (ES Modules)
 - **Framework**: Express.js
 - **AI**: Google Gemini (via @google/generative-ai)
 - **Database**: Firebase Firestore (optional, with in-memory fallback)
@@ -36,21 +31,18 @@ Regagen API is a content generation platform powered by Google's Gemini AI. It h
 .
 ├── src/
 │   ├── config/
-│   │   └── firebase.ts          # Firebase configuration (optional)
+│   │   └── firebase.js          # Firebase configuration (optional)
 │   ├── controllers/
-│   │   ├── contentController.ts # Content generation endpoints
-│   │   └── dataController.ts    # Project/campaign/topic management
+│   │   ├── contentController.js # Content generation endpoints
+│   │   └── dataController.js    # Project/campaign/topic management
 │   ├── middleware/
-│   │   └── auth.ts              # Authentication middleware
+│   │   └── auth.js              # Authentication middleware
 │   ├── routers/
-│   │   └── api.ts               # API route definitions
+│   │   └── api.js               # API route definitions
 │   ├── services/
-│   │   └── geminiService.ts     # Gemini AI service layer
-│   ├── types.ts                 # TypeScript type definitions
-│   └── index.ts                 # Main application entry point
-├── frontend/
-│   ├── server.js                # Frontend proxy server (port 5000)
-│   └── index.html               # Landing page redirect
+│   │   └── geminiService.js     # Gemini AI service layer
+│   ├── types.js                 # TypeScript type definitions
+│   └── index.js                 # Main application entry point
 ├── start.sh                     # Startup script for both servers
 └── package.json                 # Node.js dependencies
 ```
@@ -103,22 +95,21 @@ None configured yet. Update this section when user expresses preferences about:
 ## Development
 
 ### Running Locally
-The app automatically starts via the configured workflow. Both backend and frontend run together:
+The app automatically starts via the configured workflow. The backend runs on port 3001:
 ```bash
 bash start.sh
 ```
 
 This script:
 1. Starts the backend API on port 3001 (localhost)
-2. Starts the frontend proxy on port 5000 (0.0.0.0)
-3. Frontend proxies all API requests to backend
+2. Frontend proxies all API requests to backend
 
 ### Development Mode
-Backend uses `tsx --watch` for hot reload on file changes.
+Backend uses `node --watch` for hot reload on file changes.
 
 ### Building for Production
 ```bash
-npm run build  # Compiles TypeScript to dist/
+npm run build  # Compiles JavaScript to dist/
 npm start      # Runs compiled code
 ```
 
@@ -156,4 +147,4 @@ Access Swagger UI at: `/docs`
 - Image generation currently returns placeholder images (Picsum) as the standard Gemini SDK doesn't yet support image generation
 - Authentication defaults to guest user when no token provided
 - All data is stored in-memory when Firebase is not configured
-- Backend must run on localhost, frontend on 0.0.0.0:5000 for Replit preview to work
+- Backend must run on localhost for Replit preview to work
