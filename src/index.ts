@@ -4,7 +4,6 @@ import dotenv from 'dotenv';
 import helmet from 'helmet';
 import swaggerJsdoc from 'swagger-jsdoc';
 import apiRoutes from './routers/api.js';
-
 dotenv.config();
 
 const app = express();
