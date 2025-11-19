@@ -12,7 +12,8 @@ const PORT = process.env.PORT || 3001;
 
 // Middleware
 app.use(helmet({
-  contentSecurityPolicy: false // Disable CSP for Swagger CDN to work easily
+  contentSecurityPolicy: false,
+  frameguard: false
 }));
 
 // Remove CORS barriers: Allow all origins
