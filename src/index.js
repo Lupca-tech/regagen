@@ -19,7 +19,8 @@ app.use(helmet({
 app.use(cors({
   origin: '*', 
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  optionsSuccessStatus: 204 // Explicitly handle preflight requests with a 204 No Content
 }));
 
 app.use(express.json({ limit: '10mb' }));
