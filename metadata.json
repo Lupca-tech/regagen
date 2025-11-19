@@ -1,0 +1,5 @@
+{
+  "name": "Regagen API Backend",
+  "description": "Node.js/Express backend for the Regagen content creation platform using Firebase Admin and Gemini API.",
+  "requestFramePermissions": []
+}
