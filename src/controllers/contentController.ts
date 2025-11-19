@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import { AuthenticatedRequest } from '../middleware/auth.js';
 import { db, storage, isFirebaseEnabled } from '../config/firebase.js';
 import { generateContentFlow, analyzePerformance } from '../services/geminiService.js';
-import { FieldValue } from 'firebase-admin/firestore';
+import { FieldValue, QueryDocumentSnapshot } from 'firebase-admin/firestore';
 import { GeneratedContent } from '../types.js';
 import { Buffer } from 'buffer';
 
@@ -114,7 +114,7 @@ export const getUserContent = async (req: AuthenticatedRequest, res: Response) =
                 .orderBy("createdAt", "desc")
                 .get();
             
-            const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            const data = snapshot.docs.map((doc: QueryDocumentSnapshot) => ({ id: doc.id, ...doc.data() }));
             res.json(data);
         } else {
             const data = inMemoryStore[userId] || [];
@@ -143,7 +143,7 @@ export const regenerateAnalysis = async (req: AuthenticatedRequest, res: Respons
         } else {
             const userId = req.user!.uid;
             const userContent = inMemoryStore[userId] || [];
-            content = userContent.find((c: any) => c.id === contentId);
+            content = userContent.find((c: GeneratedContent) => c.id === contentId);
             
             if (!content) {
                 res.status(404).json({ error: "Content not found" });
@@ -159,7 +159,7 @@ export const regenerateAnalysis = async (req: AuthenticatedRequest, res: Respons
         } else {
             const userId = req.user!.uid;
             const userContent = inMemoryStore[userId] || [];
-            const index = userContent.findIndex((c: any) => c.id === contentId);
+            const index = userContent.findIndex((c: GeneratedContent) => c.id === contentId);
             if (index >= 0) {
                 userContent[index].analysis = analysis;
             }
