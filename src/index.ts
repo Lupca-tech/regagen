@@ -3,7 +3,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import helmet from 'helmet';
 import swaggerJsdoc from 'swagger-jsdoc';
-import apiRoutes from './routes/api.js';
+import apiRoutes from './routers/api.js';
 
 dotenv.config();
 
@@ -51,7 +51,7 @@ const swaggerOptions = {
     },
     security: [], // No security by default
   },
-  apis: ['./src/routes/*.ts', './dist/routes/*.js'], 
+  apis: ['./src/routers/*.ts', './dist/routers/*.js'], 
 };
 
 const swaggerSpec = swaggerJsdoc(swaggerOptions);
