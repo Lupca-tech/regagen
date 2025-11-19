@@ -143,7 +143,7 @@ export const regenerateAnalysis = async (req: AuthenticatedRequest, res: Respons
         } else {
             const userId = req.user!.uid;
             const userContent = inMemoryStore[userId] || [];
-            content = userContent.find((c: GeneratedContent) => c.id === contentId);
+            content = userContent.find((c: any) => c.id === contentId);
             
             if (!content) {
                 res.status(404).json({ error: "Content not found" });
@@ -159,7 +159,7 @@ export const regenerateAnalysis = async (req: AuthenticatedRequest, res: Respons
         } else {
             const userId = req.user!.uid;
             const userContent = inMemoryStore[userId] || [];
-            const index = userContent.findIndex((c: GeneratedContent) => c.id === contentId);
+            const index = userContent.findIndex((c: any) => c.id === contentId);
             if (index >= 0) {
                 userContent[index].analysis = analysis;
             }

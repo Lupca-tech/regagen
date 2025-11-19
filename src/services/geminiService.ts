@@ -1,83 +1,70 @@
-import { GoogleGenerativeAI, SchemaType } from "@google/generative-ai";
-import dotenv from 'dotenv';
-import type { 
-    GeneratedContent, 
-    EditablePlatform, 
-    BrandVoiceProfile, 
-    Project, 
-    Campaign, 
-    PerformanceAnalysis, 
-    CalendarSettings,
-    FullGenerationContext
-} from '../types.js';
+import {
+    Content,
+    GoogleGenerativeAI,
+    HarmBlockThreshold,
+    HarmCategory,
+    Schema,
+    SchemaType,
+    Tool,
+} from '@google/generative-ai';
+import { GeneratedContent, PerformanceAnalysis, EditablePlatform, FullGenerationContext, CalendarSettings } from '../types.js';
 
-dotenv.config();
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
 
-if (!process.env.API_KEY && !process.env.GEMINI_API_KEY) {
-  throw new Error("GEMINI_API_KEY environment variable is not set.");
-}
+const safetySettings = [
+    { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
+    { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
+    { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
+    { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
+];
 
-const genAI = new GoogleGenerativeAI(process.env.API_KEY || process.env.GEMINI_API_KEY || '');
-
-const allPlatformProperties = {
-  web: {
-    type: SchemaType.OBJECT,
-    properties: {
-      metaTitle: { type: SchemaType.STRING, description: "An SEO-optimized meta title (50-60 characters)." },
-      metaDescription: { type: SchemaType.STRING, description: "An SEO-optimized meta description (150-160 characters)." },
-      body: { type: SchemaType.STRING, description: "The main article body, optimized for web reading with clear headings and structure, formatted as plain text with markdown-style line breaks." },
-      htmlBody: { type: SchemaType.STRING, description: "A clean, semantic HTML version of the article body. Use tags like <h2>, <h3>, <p>, <strong>, <em>, <ul>, and <li>." },
-      focusKeyword: { type: SchemaType.STRING, description: "The single most important keyword or phrase (2-4 words) that the content should rank for." }
-    },
-    required: ["metaTitle", "metaDescription", "body", "htmlBody", "focusKeyword"],
-  },
-  facebook: {
-    type: SchemaType.OBJECT,
-    properties: {
-      postText: { type: SchemaType.STRING, description: "A short, engaging Facebook post with emojis and a call to action." },
-    },
-    required: ["postText"],
-  },
-  linkedin: {
-    type: SchemaType.OBJECT,
-    properties: {
-      postText: { type: SchemaType.STRING, description: "A professional, business-oriented LinkedIn post. It should be insightful, use relevant hashtags, and encourage professional discussion." },
-    },
-    required: ["postText"],
-  },
-  x: {
-    type: SchemaType.OBJECT,
-    properties: {
-      postText: { type: SchemaType.STRING, description: "A concise, impactful post for X (formerly Twitter), under 280 characters, with relevant hashtags." },
-    },
-    required: ["postText"],
-  },
-  tiktok: {
-    type: SchemaType.OBJECT,
-    properties: {
-      script: { type: SchemaType.STRING, description: "A script for a 30-60 second TikTok/YT Shorts video, including visual cues and spoken lines." },
-    },
-    required: ["script"],
-  },
-  youtube: {
-    type: SchemaType.OBJECT,
-    properties: {
-      title: { type: SchemaType.STRING, description: "A catchy, keyword-rich title for a YouTube video." },
-      description: { type: SchemaType.STRING, description: "A detailed YouTube video description with timestamps, links, and hashtags." },
-    },
-    required: ["title", "description"],
-  },
+const imageGenerationTool: Tool = {
+    functionDeclarations: [
+        {
+            name: 'generate_image',
+            description: 'Generates an image from a text prompt.',
+            parameters: {
+                type: SchemaType.OBJECT,
+                properties: {
+                    prompt: { type: SchemaType.STRING, description: 'The text prompt to generate the image from.' },
+                },
+                required: ['prompt'],
+            },
+        },
+    ],
 };
 
-async function generateImage(prompt: string): Promise<string> {
-    try {
-        console.log("Image generation not yet supported in standard Gemini SDK, using placeholder.");
-        return `https://picsum.photos/seed/${encodeURIComponent(prompt.substring(0, 20))}/1024/768`;
-    } catch (error) {
-        console.error("Error generating image:", error);
-        return `https://picsum.photos/seed/${encodeURIComponent(prompt.substring(0, 20))}/1024/768`;
-    }
-}
+const allPlatformProperties: { [key in EditablePlatform]?: Schema } = {
+    web: { type: SchemaType.OBJECT, properties: { metaTitle: { type: SchemaType.STRING }, metaDescription: { type: SchemaType.STRING }, body: { type: SchemaType.STRING } }, required: ["metaTitle", "metaDescription", "body"] },
+    facebook: { type: SchemaType.OBJECT, properties: { post: { type: SchemaType.STRING } }, required: ["post"] },
+    x: { type: SchemaType.OBJECT, properties: { tweet: { type: SchemaType.STRING } }, required: ["tweet"] },
+    linkedin: { type: SchemaType.OBJECT, properties: { post: { type: SchemaType.STRING } }, required: ["post"] },
+    tiktok: { type: SchemaType.OBJECT, properties: { script: { type: SchemaType.STRING }, description: { type: SchemaType.STRING } }, required: ["script", "description"] },
+    youtube: { type: SchemaType.OBJECT, properties: { title: { type: SchemaType.STRING }, description: { type: SchemaType.STRING }, script: { type: SchemaType.STRING } }, required: ["title", "description", "script"] },
+};
+
+// Placeholder for actual image generation API call
+const generateImage = async (prompt: string): Promise<string> => {
+    // In a real implementation, this would call an image generation service.
+    // This is a placeholder that returns a dummy URL.
+    console.log(`(Placeholder) Generating image for prompt: "${prompt}"`);
+    return `https://via.placeholder.com/1024x768.png?text=${encodeURIComponent(prompt)}`;
+};
+
+const dynamicContentGenerationSchema: Schema = {
+    type: SchemaType.OBJECT,
+    properties: {
+        mainArticle: {
+            type: SchemaType.OBJECT,
+            properties: {
+                title: { type: SchemaType.STRING },
+                body: { type: SchemaType.STRING },
+            },
+            required: ["title", "body"],
+        },
+    },
+    required: ['mainArticle'],
+};
 
 export const analyzePerformance = async (
   content: GeneratedContent,
@@ -180,7 +167,7 @@ export const generateContentFlow = async (
         }
     }
     
-    const dynamicContentGenerationSchema = {
+    const dynamicContentGenerationSchema: Schema = {
       type: SchemaType.OBJECT,
       properties,
       required,
@@ -193,17 +180,27 @@ export const generateContentFlow = async (
 
     const systemInstruction = `You are a world-class content strategist. Topic: "${topic}". Language: ${language}. ${ragContext}. Return JSON only.`;
     
+    const parts = [{ text: `Generate content for topic: ${topic}` }];
+
     const model = genAI.getGenerativeModel({
         model: "gemini-1.5-flash",
         systemInstruction,
         generationConfig: {
             responseMimeType: "application/json",
             responseSchema: dynamicContentGenerationSchema,
-            temperature: 0.8,
         }
     });
 
-    const result = await model.generateContent(`Generate a full content package for: "${topic}"`);
+    const result = await model.generateContent({
+        contents: [{ role: "user", parts: parts }],
+        safetySettings,
+        tools: shouldGenerateImage ? [imageGenerationTool] : [],
+        generationConfig: {
+            responseMimeType: "application/json",
+            responseSchema: dynamicContentGenerationSchema,
+        },
+    });
+
     const response = result.response;
     const textContent = JSON.parse(response.text().trim());
     
@@ -219,7 +216,7 @@ export const generateContentFlow = async (
             imagePrompts.map(prompt => generateImage(prompt))
         );
 
-        resultContent.images = imageUrls.map((url, index) => ({
+        resultContent.images = imageUrls.map((url: string, index: number) => ({
             url: url,
             prompt: imagePrompts[index]
         }));

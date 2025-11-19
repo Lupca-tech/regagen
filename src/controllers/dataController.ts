@@ -3,6 +3,7 @@ import { AuthenticatedRequest } from '../middleware/auth.js';
 import { db, isFirebaseEnabled } from '../config/firebase.js';
 import { FieldValue } from 'firebase-admin/firestore';
 import { generateCalendarSuggestions } from '../services/geminiService.js';
+import { QueryDocumentSnapshot } from 'firebase-admin/firestore';
 
 const inMemoryData: { [collection: string]: { [userId: string]: any[] } } = {
     projects: {},
@@ -17,7 +18,7 @@ export const getProjects = async (req: AuthenticatedRequest, res: Response) => {
             .where("userId", "==", req.user!.uid)
             .orderBy("createdAt", "desc")
             .get();
-        res.json(snapshot.docs.map(d => ({ id: d.id, ...d.data() })));
+        res.json(snapshot.docs.map((d: QueryDocumentSnapshot) => ({ id: d.id, ...d.data() })));
     } else {
         const userId = req.user!.uid;
         const projects = (inMemoryData.projects[userId] || []).sort((a: any, b: any) => 
@@ -61,7 +62,7 @@ export const getCampaigns = async (req: AuthenticatedRequest, res: Response) => 
         if (projectId) q = q.where("projectId", "==", projectId);
         
         const snapshot = await q.orderBy("createdAt", "desc").get();
-        res.json(snapshot.docs.map(d => ({ id: d.id, ...d.data() })));
+        res.json(snapshot.docs.map((d: QueryDocumentSnapshot) => ({ id: d.id, ...d.data() })));
     } else {
         let campaigns = inMemoryData.campaigns[userId] || [];
         if (projectId) {
@@ -108,7 +109,7 @@ export const getTopics = async (req: AuthenticatedRequest, res: Response) => {
         if (campaignId) q = q.where("campaignId", "==", campaignId);
         
         const snapshot = await q.orderBy("createdAt", "desc").get();
-        res.json(snapshot.docs.map(d => ({ id: d.id, ...d.data() })));
+        res.json(snapshot.docs.map((d: QueryDocumentSnapshot) => ({ id: d.id, ...d.data() })));
     } else {
         let topics = inMemoryData.topics[userId] || [];
         if (campaignId) {
@@ -159,7 +160,7 @@ export const getCalendarEvents = async (req: AuthenticatedRequest, res: Response
                 .where("date", ">=", start)
                 .where("date", "<=", end)
                 .get();
-            res.json(snapshot.docs.map(d => ({ id: d.id, ...d.data() })));
+            res.json(snapshot.docs.map((d: QueryDocumentSnapshot) => ({ id: d.id, ...d.data() })));
         } else {
             let events = inMemoryData.calendarEvents[userId] || [];
             if (start && end) {
