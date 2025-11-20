@@ -4,12 +4,24 @@ import dotenv from 'dotenv';
 import helmet from 'helmet';
 import swaggerJsdoc from 'swagger-jsdoc';
 import apiRoutes from './routers/api.js';
+import morgan from 'morgan';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+// File path setup
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Create a write stream (in append mode)
+const accessLogStream = fs.createWriteStream(path.join(__dirname, '..', 'access.log'), { flags: 'a' });
+
 // Middleware
+app.use(morgan('combined', { stream: accessLogStream }));
 app.use(helmet({
   contentSecurityPolicy: false,
   frameguard: false

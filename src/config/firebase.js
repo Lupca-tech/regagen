@@ -10,7 +10,7 @@ try {
     const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
     admin.initializeApp({
       credential: admin.credential.cert(serviceAccount),
-      storageBucket: process.env.FIREBASE_STORAGE_BUCKET || "regagen.appspot.com"
+      storageBucket: process.env.FIREBASE_STORAGE_BUCKET || "regagen.firebasestorage.app"
     });
     firebaseInitialized = true;
     console.log('Firebase initialized successfully');

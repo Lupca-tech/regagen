@@ -34,14 +34,26 @@ export const getProjects = async (req, res) => {
 export const createProject = async (req, res) => {
     const data = req.body;
     const userId = req.user.uid;
+
+    if (userId === 'public_guest_user') {
+        return res.status(403).json({ error: 'Guest users are not allowed to create projects.' });
+    }
+
+    if (!data.name) {
+        return res.status(400).json({ error: 'Project name is required.' });
+    }
     
     if (isFirebaseEnabled) {
-        const docRef = await db.collection("projects").add({
-            ...data,
-            userId,
-            createdAt: FieldValue.serverTimestamp()
-        });
-        res.json({ id: docRef.id });
+        try {
+            const docRef = await db.collection("projects").add({
+                ...data,
+                userId,
+                createdAt: FieldValue.serverTimestamp()
+            });
+            res.status(201).json({ id: docRef.id });
+        } catch (error) {
+            res.status(500).json({ error: 'Failed to create project in Firestore.' });
+        }
     } else {
         const id = `proj_${Date.now()}_${Math.random().toString(36).substring(7)}`;
         const project = {
@@ -52,7 +64,7 @@ export const createProject = async (req, res) => {
         };
         if (!inMemoryData.projects[userId]) inMemoryData.projects[userId] = [];
         inMemoryData.projects[userId].push(project);
-        res.json({ id });
+        res.status(201).json({ id });
     }
 };
 

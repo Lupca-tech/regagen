@@ -51,6 +51,7 @@ describe('dataController (in-memory)', () => {
             const createReq = mockRequest({ name: 'Test Project', description: 'A project for testing' });
             const createRes = mockResponse();
             await createProject(createReq, createRes);
+            expect(createRes.status).toHaveBeenCalledWith(201);
             expect(createRes.json).toHaveBeenCalledWith({ id: expect.stringContaining('proj_') });
 
             const getReq = mockRequest();
@@ -62,6 +63,22 @@ describe('dataController (in-memory)', () => {
             expect(responseData.length).toBe(1);
             expect(responseData[0].name).toBe('Test Project');
             expect(responseData[0].userId).toBe(createReq.user.uid);
+        });
+        
+        it('should return 403 if a guest user tries to create a project', async () => {
+            const createReq = mockRequest({ name: 'Guest Project' }, {}, { uid: 'public_guest_user' });
+            const createRes = mockResponse();
+            await createProject(createReq, createRes);
+            expect(createRes.status).toHaveBeenCalledWith(403);
+            expect(createRes.json).toHaveBeenCalledWith({ error: 'Guest users are not allowed to create projects.' });
+        });
+        
+        it('should return 400 if project name is missing', async () => {
+            const createReq = mockRequest({ description: 'A project without a name' });
+            const createRes = mockResponse();
+            await createProject(createReq, createRes);
+            expect(createRes.status).toHaveBeenCalledWith(400);
+            expect(createRes.json).toHaveBeenCalledWith({ error: 'Project name is required.' });
         });
 
         it('should return empty array if no projects exist', async () => {
