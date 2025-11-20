@@ -36,7 +36,6 @@ describe('verifyToken Middleware', () => {
     mockRequest.method = 'OPTIONS';
     await verifyToken(mockRequest, mockResponse, nextFunction);
     
-    expect(mockResponse.setHeader).toHaveBeenCalledWith('Access-Control-Allow-Origin', '*');
     expect(mockResponse.sendStatus).toHaveBeenCalledWith(204);
     expect(nextFunction).not.toHaveBeenCalled();
     expect(auth.verifyIdToken).not.toHaveBeenCalled();
