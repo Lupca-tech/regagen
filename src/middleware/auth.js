@@ -2,7 +2,6 @@ import { auth } from '../config/firebase.js';
 
 export const verifyToken = async (req, res, next) => {
   if (req.method === 'OPTIONS') {
-    res.setHeader('Access-Control-Allow-Origin', '*');
     return res.sendStatus(204);
   }
   const authHeader = req.headers.authorization;
