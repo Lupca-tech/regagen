@@ -18,7 +18,7 @@ describe('verifyToken Middleware', () => {
       headers: {},
     };
     mockResponse = {
-      setHeader: jest.fn(),
+      header: jest.fn(),
       sendStatus: jest.fn(),
     };
     nextFunction = jest.fn();
@@ -32,10 +32,13 @@ describe('verifyToken Middleware', () => {
     displayName: 'Guest User',
   };
 
-  test('should respond with 204 for OPTIONS requests and set cors header', async () => {
+  test('should respond with 204 for OPTIONS requests and set cors headers', async () => {
     mockRequest.method = 'OPTIONS';
     await verifyToken(mockRequest, mockResponse, nextFunction);
     
+    expect(mockResponse.header).toHaveBeenCalledWith('Access-Control-Allow-Origin', '*');
+    expect(mockResponse.header).toHaveBeenCalledWith('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    expect(mockResponse.header).toHaveBeenCalledWith('Access-Control-Allow-Headers', 'Content-Type, Authorization');
     expect(mockResponse.sendStatus).toHaveBeenCalledWith(204);
     expect(nextFunction).not.toHaveBeenCalled();
     expect(auth.verifyIdToken).not.toHaveBeenCalled();
@@ -90,7 +93,7 @@ describe('verifyToken Middleware', () => {
 
     expect(auth.verifyIdToken).toHaveBeenCalledWith(idToken);
     expect(mockRequest.user).toEqual(publicUser);
-    expect(console.warn).toHaveBeenCalledWith('Warning: Invalid token provided. Proceeding as Guest User.', error);
+    expect(console.warn).toHaveBeenCalledWith('Warning: Invalid token.', error);
     expect(nextFunction).toHaveBeenCalledTimes(1);
   });
 });
