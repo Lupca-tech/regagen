@@ -32,6 +32,16 @@ describe('verifyToken Middleware', () => {
     displayName: 'Guest User',
   };
 
+  test('should respond with 204 for OPTIONS requests and set cors header', async () => {
+    mockRequest.method = 'OPTIONS';
+    await verifyToken(mockRequest, mockResponse, nextFunction);
+    
+    expect(mockResponse.setHeader).toHaveBeenCalledWith('Access-Control-Allow-Origin', '*');
+    expect(mockResponse.sendStatus).toHaveBeenCalledWith(204);
+    expect(nextFunction).not.toHaveBeenCalled();
+    expect(auth.verifyIdToken).not.toHaveBeenCalled();
+  });
+
   test('should assign public guest user if no Authorization header is present', async () => {
     await verifyToken(mockRequest, mockResponse, nextFunction);
 
