@@ -2,7 +2,7 @@ import { auth } from '../config/firebase.js';
 
 export const verifyToken = async (req, res, next) => {
   if (req.method === 'OPTIONS') {
-    return next(); 
+    return res.sendStatus(204);
   }
   const authHeader = req.headers.authorization;
 
