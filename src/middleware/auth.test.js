@@ -18,8 +18,9 @@ describe('verifyToken Middleware', () => {
       headers: {},
     };
     mockResponse = {
+      setHeader: jest.fn(),
       sendStatus: jest.fn(),
-    }; // Not used in this middleware
+    };
     nextFunction = jest.fn();
     // Clear mock history before each test
     auth.verifyIdToken.mockClear();
@@ -30,15 +31,6 @@ describe('verifyToken Middleware', () => {
     email: 'guest@regagen.com',
     displayName: 'Guest User',
   };
-
-  test('should respond with 204 for OPTIONS requests', async () => {
-    mockRequest.method = 'OPTIONS';
-    await verifyToken(mockRequest, mockResponse, nextFunction);
-
-    expect(mockResponse.sendStatus).toHaveBeenCalledWith(204);
-    expect(nextFunction).not.toHaveBeenCalled();
-    expect(auth.verifyIdToken).not.toHaveBeenCalled();
-  });
 
   test('should assign public guest user if no Authorization header is present', async () => {
     await verifyToken(mockRequest, mockResponse, nextFunction);

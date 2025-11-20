@@ -6,7 +6,7 @@ import * as contentController from '../controllers/contentController.js';
 const router = Router();
 
 // All routes require authentication
-// router.use(verifyToken);
+router.use(verifyToken);
 
 /**
  * @swagger

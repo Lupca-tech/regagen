@@ -1,9 +1,6 @@
 import { auth } from '../config/firebase.js';
 
 export const verifyToken = async (req, res, next) => {
-  if (req.method === 'OPTIONS') {
-    return res.sendStatus(204);
-  }
   const authHeader = req.headers.authorization;
 
   // Define a public guest user to allow access without authentication
